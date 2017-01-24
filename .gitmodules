@@ -1,0 +1,3 @@
+[submodule "WiFi101"]
+	path = WiFi101
+	url = https://github.com/arduino-libraries/WiFi101
