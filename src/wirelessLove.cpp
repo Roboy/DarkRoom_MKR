@@ -16,7 +16,7 @@ static int getConnectionStatus(void);
 /************************ VARIABLES ***************************************/
 static int      LoveStatus = WL_IDLE_STATUS;
 static char     ssid[]="1-UTUM-Guest"; 
-static char     pass[] = "inroboywiitrust"; 
+static char     pass[] = ""; 
 static bool     timeout = false; 
 
 static uint16_t  sensorPort_l= 2390; 
@@ -26,7 +26,7 @@ static uint16_t  logginPort_l = 2392;
 static uint16_t  sensorPort_t = 8000; 
 static uint16_t  logginPort_t = 8001; 
 
-static const char  remoteIP[] = "10.25.12.189"; 
+static const char  remoteIP[] = "10.25.13.118"; 
 static const char  TestBuffer[]="Hello World"; 
 static const int    timestampSize = 2; 
 
