@@ -5,46 +5,10 @@
  const char  TestBuffer[] ="Hello World"; 
  const int    timestampSize = 2; 
 
-<<<<<<< HEAD
-/************************ VARIABLES ***************************************/
-static int      LoveStatus = WL_IDLE_STATUS;
-static char     ssid[]="1-UTUM-Guest"; 
-static char     pass[] = ""; 
-static bool     timeout = false; 
-
-static uint16_t  sensorPort_l= 2390; 
-static uint16_t  commandPort_l = 2391; 
-static uint16_t  logginPort_l = 2392; 
-
-static uint16_t  sensorPort_t = 8000; 
-static uint16_t  logginPort_t = 8001; 
-
-static const char  remoteIP[] = "10.25.13.118"; 
-static const char  TestBuffer[]="Hello World"; 
-static const int    timestampSize = 2; 
-
-
-static WiFiUDP  UDP_sensors; 
-static WiFiUDP  UDP_commands; 
-static WiFiUDP  UDP_loggin; 
-
-
-static int printMacAddress(void)
-{
-    byte mac[6]; 
-    WiFi.macAddress(mac); 
-    Serial.print("MAC: "); 
-    for(int i = 6; i >= 0; --i){
-        Serial.print("MAC: "); 
-        Serial.println(mac[i], HEX); 
-    }
-    return (int) ES_WIFI_SUCCESS; 
-=======
 WIFI_LOVE::WIFI_LOVE(const char* SSID, const char* PASSWD, IPAddress &broadcastIP): 
 broadcastIP(broadcastIP){
     sprintf(pass,PASSWD);
     sprintf(ssid,SSID);
->>>>>>> devel
 }
 
 uint16_t WIFI_LOVE::getCmndPort()
