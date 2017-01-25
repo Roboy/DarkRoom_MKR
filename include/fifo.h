@@ -1,8 +1,6 @@
 #ifndef FIFO_H
 #define FIFO_H
 
-#include "board.h"
-
 typedef struct Sweep{
     uint32_t        sweepDuration; 
     uint16_t        lighthouse; 

@@ -1,26 +1,48 @@
 #ifndef WIRELESSLOVE_H
 #define WIRELESSLOVE_H
 
-#include "board.h"
+#include "logging.h"
 #include <WiFi101.h>
 #include <WiFiUdp.h>
+#include "protoLighthouse.h"
 
-typedef struct _WIFI_LOVE{
-    uint16_t     (* const getCmndPort)(void); 
-    uint32_t     (* const getLocalIP)(void); 
+class WIFI_LOVE{
+public:
+    WIFI_LOVE(const char* ssid, const char* passwd, IPAddress &broadcastIP);
+    uint16_t getCmndPort(); 
+    uint32_t getLocalIP(); 
 
-    int     (* const printWifiStatus)(void); 
-    int     (* const initWifi)(void); 
-    int     (* const initUDPSockets)(void); 
-    int     (* const fmsgTest_s)(void); 
-    int     (* const fmsgBroadcast_s)(const uint8_t * buffer, size_t size); 
-    int     (* const fmsgLogging_s)(const uint8_t * buffer, size_t size); 
-    int     (* const fmsgSensorDataT_s)(const uint8_t *buffer, size_t size); 
-    int     (* const fmsgSensorData_s)(const uint8_t *buffer, size_t size); 
-    bool    (* const fmsgConfig_r)(); 
-    int     (* const getConnectionStatus)(void);
-}WIFI_LOVE;
+    int     printWifiStatus(); 
+    int     initWifi(); 
+    int     initUDPSockets(); 
+    int     fmsgTest_s(); 
+    int     fmsgBroadcast_s(const uint8_t * buffer, size_t size); 
+    int     fmsgLogging_s(const uint8_t * buffer, size_t size); 
+    int     fmsgSensorDataT_s(const uint8_t *buffer, size_t size); 
+    int     fmsgSensorData_s(const uint8_t *buffer, size_t size); 
+    bool    receiveConfig(); 
+    int     getConnectionStatus();
+    void    checkHostConfig();
 
-extern WIFI_LOVE const  whylove;
+    int      LoveStatus = WL_IDLE_STATUS;
+    char     ssid[100]; 
+    char     pass[100]; 
+    bool     timeout = false; 
+
+    uint16_t  sensorPort   = 2390; 
+    uint16_t  commandPort  = 2391; 
+    uint16_t  logginPort   = 2392; 
+    uint16_t  configPort   = 8001; 
+
+    IPAddress remoteIP;;
+    IPAddress broadcastIP; 
+
+    WiFiUDP  UDP_config;
+    WiFiUDP  UDP_sensors; 
+    WiFiUDP  UDP_commands; 
+    WiFiUDP  UDP_logging; 
+    PROTO_LOVE protoLove;
+};
+
 
 #endif

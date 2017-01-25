@@ -1,54 +1,27 @@
 #include <SPI.h>
 #include "wirelessLove.h"
 
-/************************ FUNCTIONS ***************************************/
-static int printWifiStatus(void); 
-static int initWifi(void); 
-static int initUDPSockets(void); 
-static int getConnectionStatus(void);
 
+ const char  TestBuffer[] ="Hello World"; 
+ const int    timestampSize = 2; 
 
-/************************ VARIABLES ***************************************/
-static int      LoveStatus = WL_IDLE_STATUS;
-static char     ssid[]="1-UTUM-Guest"; 
-static char     pass[] = ""; 
-static bool     timeout = false; 
-
-// --------- local [l] ports from the mkr
-static uint16_t  sensorPort_l   = 2390; 
-static uint16_t  commandPort_l  = 2391; 
-static uint16_t  logginPort_l   = 2392; 
-static uint16_t  configPort_l   = 8001; 
-
-// --------- target ports [t] from the mkr
-static uint16_t  sensorPort_t = 0x0; 
-static uint16_t  logginPort_t = 0x0; 
-
-IPAddress remoteIP(0,0,0,0);
-IPAddress broadcastIP(10,25,15,255); 
-static const char  TestBuffer[] ="Hello World"; 
-static const int    timestampSize = 2; 
-
-
-static WiFiUDP  UDP_broadcast_config;
-static WiFiUDP  UDP_sensors; 
-static WiFiUDP  UDP_commands; 
-static WiFiUDP  UDP_logging; 
-
-static uint16_t 
-getCmndPort()
-{
-    return (LoveStatus == WL_CONNECTED) ? commandPort_l : 0 ; 
+WIFI_LOVE::WIFI_LOVE(const char* SSID, const char* PASSWD, IPAddress &broadcastIP): 
+broadcastIP(broadcastIP){
+    sprintf(pass,PASSWD);
+    sprintf(ssid,SSID);
 }
 
-static uint32_t 
-getLocalIP()
+uint16_t WIFI_LOVE::getCmndPort()
+{
+    return (LoveStatus == WL_CONNECTED) ? commandPort : 0 ; 
+}
+
+uint32_t WIFI_LOVE::getLocalIP()
 {
     return (LoveStatus == WL_CONNECTED) ? WiFi.localIP() : 0 ; 
 }
 
-static int 
-printWifiStatus(void)
+int WIFI_LOVE::printWifiStatus(void)
 {
     Serial.print("SSID: "); 
     Serial.println(WiFi.SSID()); 
@@ -69,8 +42,7 @@ printWifiStatus(void)
     return (int) ES_WIFI_SUCCESS; 
 }
 
-static int 
-initWifi(void)
+int WIFI_LOVE::initWifi(void)
 {
     uint32_t timoutCounter = 0; 
     
@@ -99,60 +71,43 @@ initWifi(void)
     return (int) ES_WIFI_SUCCESS; 
 }
 
-static int 
-initUDPSockets(void)
+int WIFI_LOVE::initUDPSockets(void)
 {
-    // Start WiFiUDP socket, listening at localport
-    if (0 == UDP_sensors.begin(sensorPort_l)){
-       return (int) ES_WIFI_FAIL_UDP_SOCKET; 
-    }
-
-    if (0 == UDP_logging.begin(logginPort_l)){
-       return (int) ES_WIFI_FAIL_UDP_SOCKET; 
-    }
-
-    //if (0 == UDP_commands.begin(commandPort_l)){
-    //    return (int) ES_WIFI_FAIL_UDP_SOCKET;
-    //}
-
-    if (0 == UDP_broadcast_config.begin(commandPort_l)){
+    if (0 == UDP_config.begin(commandPort)){
         return (int) ES_WIFI_FAIL_UDP_SOCKET; 
     }
 
     return (int) ES_WIFI_SUCCESS; 
 }
 
-static int 
-fmsgTest_s(void)
+int WIFI_LOVE::fmsgTest_s(void)
 {
-    UDP_sensors.beginPacket(remoteIP, sensorPort_t); 
+    UDP_sensors.beginPacket(remoteIP, sensorPort); 
     UDP_sensors.write(TestBuffer);
     UDP_sensors.endPacket();
     
     return (int) ES_WIFI_SUCCESS; 
 }
 
-static int 
-fmsgBroadcast_s(const uint8_t * buffer, size_t size)
+int WIFI_LOVE::fmsgBroadcast_s(const uint8_t * buffer, size_t size)
 {
     uint8_t res = ES_WIFI_ERROR; 
-    if(0 == UDP_broadcast_config.beginPacket(broadcastIP, configPort_l))
+    if(0 == UDP_config.beginPacket(broadcastIP, configPort))
     {
         LOG(logWARNING, "Can not connect to the supplied IP or PORT");     
         return  res; 
     } 
 
-    if(size != UDP_broadcast_config.write(buffer, size)){
+    if(size != UDP_config.write(buffer, size)){
         Serial.println("Size of the UDP Package to big! Truncated overlapping data"); 
     }
-    UDP_broadcast_config.endPacket();
+    UDP_config.endPacket();
     return (int) ES_WIFI_SUCCESS; 
 }
 
-static int 
-fmsgLogging_s(const uint8_t * buffer, size_t size)
+int WIFI_LOVE::fmsgLogging_s(const uint8_t * buffer, size_t size)
 {
-    UDP_logging.beginPacket(remoteIP, configPort_l); 
+    UDP_logging.beginPacket(remoteIP, configPort); 
     if(size != UDP_logging.write(buffer, size)){
         Serial.println("Size of the UDP Package to big! Truncated overlapping data"); 
     }
@@ -160,34 +115,44 @@ fmsgLogging_s(const uint8_t * buffer, size_t size)
     return (int) ES_WIFI_SUCCESS; 
 }
 
-static bool 
-fmsgConfig_r()
+bool WIFI_LOVE::receiveConfig()
 {
     bool rcv = false; 
     int packetSize = 0; 
 
-    packetSize = UDP_broadcast_config.available(); 
-    LOG_d(logINFO, "check if command rcvd", packetSize); 
+    packetSize = UDP_config.parsePacket(); 
+    LOG_d(logINFO, "check if command rcvd ", packetSize); 
     if(packetSize > 0 )
     { 
         unsigned char buffer[255]; 
         LOG(logINFO, "rcvd command from host..."); 
-        size_t len = UDP_broadcast_config.read(buffer , sizeof buffer); 
+        size_t len = UDP_config.read(buffer , sizeof buffer); 
         if(len > 0 && len < 60) 
         {
             buffer[len] = '\0'; 
             protoLove.decode_config_Proto(buffer, len); 
             rcv = true; 
-        }
+
+            remoteIP = protoLove.configObjMsg.ip;
+            logginPort = protoLove.configObjMsg.logging_port; 
+            sensorPort = protoLove.configObjMsg.sensor_port;
+
+            if (!UDP_sensors.begin(sensorPort)){
+                return false; 
+            }
+
+            if (!UDP_logging.begin(logginPort)){
+                return false; 
+            }
+        }   
     }
     return rcv; 
 }
 
-static int 
-fmsgSensorDataT_s(const uint8_t * buffer, size_t size)
+int WIFI_LOVE::fmsgSensorDataT_s(const uint8_t * buffer, size_t size)
 {
-    LOG_d(logINFO, "Send UDP Packet with Timestamp, size: ", size + timestampSize); 
-    UDP_sensors.beginPacket(remoteIP, sensorPort_t); 
+    LOG_d(logVERBOSE, "Send UDP Packet with Timestamp, size: ", size + timestampSize); 
+    UDP_sensors.beginPacket(remoteIP, sensorPort); 
     unsigned long t = millis(); 
     uint8_t *addr = (uint8_t*) &t;
     for(int i =  0; i < timestampSize; i++){
@@ -202,23 +167,37 @@ fmsgSensorDataT_s(const uint8_t * buffer, size_t size)
     return (int) ES_WIFI_SUCCESS; 
 }
 
-static int 
-fmsgSensorData_s(const uint8_t * buffer, size_t size)
+int WIFI_LOVE::fmsgSensorData_s(const uint8_t * buffer, size_t size)
 {
-    UDP_sensors.beginPacket(remoteIP, sensorPort_t); 
+    UDP_sensors.beginPacket(remoteIP, sensorPort); 
     if(size != UDP_sensors.write(buffer, size)){
-        Serial.println("Size of the UDP Package to big! Truncated overlapping data"); 
+        LOG(logERROR,"Size of the UDP Package to big! Truncated overlapping data"); 
     }
     UDP_sensors.endPacket();
     return (int) ES_WIFI_SUCCESS; 
 }
 
-static int 
-getConnectionStatus(void)
+int WIFI_LOVE::getConnectionStatus(void)
 {
     int dV = LoveStatus; 
     return dV; 
 }
 
-
-WIFI_LOVE const whylove = {getCmndPort, getLocalIP, printWifiStatus, initWifi, initUDPSockets , fmsgTest_s, fmsgBroadcast_s, fmsgLogging_s, fmsgSensorDataT_s, fmsgSensorData_s, fmsgConfig_r, getConnectionStatus}; 
+void WIFI_LOVE::checkHostConfig(){
+    // wait for a config message
+    bool receivedConfig = false;
+    while(!receivedConfig)
+    {
+        pb_byte_t buffer[512] = {0};
+        size_t msg_len;
+        if(protoLove.encode_trackedObjConfig( getLocalIP(), getCmndPort(), buffer, msg_len)){
+            if(fmsgBroadcast_s(buffer, msg_len)){
+                LOG(logINFO, "trackedObjectConfig protobuffer successfully sent via UDP Socket"); 
+            }else{
+                LOG(logERROR, "Sending failed!"); 
+            }
+        } 
+        receivedConfig = receiveConfig();
+        delay(1000); 
+    }    
+}
