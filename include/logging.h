@@ -1,7 +1,7 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
-#include "board.h"
+#include "Arduino.h"
 
 static bool enableLogging = true; 
 
