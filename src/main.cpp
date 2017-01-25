@@ -101,7 +101,7 @@ int main( void )
 
     initPeripherals(); 
     initPins_Interrupts(); 
-    enableLogging = true;   
+    enableLogging = false;   
 
     
     whylove->checkHostConfig();
