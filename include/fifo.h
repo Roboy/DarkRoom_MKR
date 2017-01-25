@@ -11,14 +11,14 @@ typedef struct Sweep{
 typedef struct _FIFO128sweep{
     uint8_t     mRead;
     uint8_t     mWrite;
-    Sweep *      mBuffer[128]; 
-}FIFO128sweep; 
+    Sweep *      mBuffer[32]; 
+}FIFO32sweep; 
 
 typedef struct _FIFO128t{
     uint8_t     mRead;
     uint8_t     mWrite;
-    uint32_t    mBuffer[128]; 
-}FIFO128t; 
+    uint32_t    mBuffer[32]; 
+}FIFO32t; 
 
 //FIFO Operations are implemented as Preprocessor Functions since the FIFO is used in several IRQs an things need to get a bit faster
 #define FIFO_init(fifo)                 { fifo.mRead = 0; fifo.mWrite = 0;}
@@ -38,7 +38,7 @@ typedef struct _FIFO128t{
     }                                                                               \
 }
 
-#define FIFO128_read(fifo)              FIFO_read(fifo, 128)
-#define FIFO128_write(fifo, data)       FIFO_write(fifo, data, 128)
+#define FIFO32_read(fifo)              FIFO_read(fifo, 32)
+#define FIFO32_write(fifo, data)       FIFO_write(fifo, data, 32)
 
 #endif // FIFO_H

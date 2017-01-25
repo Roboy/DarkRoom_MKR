@@ -8,7 +8,6 @@
 
 #define BITS_LAST(k,n)  ((k) & ((1 << (n))-1))                  // get n-last bits from number k 
 #define RANGE(k, m, n)    BITS_LAST(((k) >> m), ((n)-(m)))        // get bit range [m-n] from number k 
-#define FIFO_SIZE 16
 
 typedef enum _SPI_PINS{
     TRDY = 0,
@@ -16,7 +15,7 @@ typedef enum _SPI_PINS{
 }_SPI_PINS; 
 
 typedef struct _Sensor{
-    FIFO128t    mSweepFIFO; 
+    FIFO32t    mSweepFIFO; 
 }Sensor; 
 
 volatile static Sensor sensors; 
@@ -67,7 +66,7 @@ static void sensor_spi(void)
     digitalWrite(SS_N, HIGH); 
 
     dataR_f = dataR_1 << 16 | dataR_2;     
-    FIFO128_write(sensors.mSweepFIFO, dataR_f); 
+    FIFO32_write(sensors.mSweepFIFO, dataR_f); 
 }
 
 static void 
@@ -111,7 +110,7 @@ int main( void )
     for (;;)
     {
         noInterrupts(); 
-        uint32_t detectedSweep = FIFO128_read(sensors.mSweepFIFO); 
+        uint32_t detectedSweep = FIFO32_read(sensors.mSweepFIFO); 
         interrupts(); 
         while( NULL != detectedSweep){
             if( (detectedSweep >> 12 & 0x01) == 1 ){ // if valid 
@@ -134,7 +133,7 @@ int main( void )
                 }
             }
             noInterrupts(); 
-            detectedSweep = FIFO128_read(sensors.mSweepFIFO); 
+            detectedSweep = FIFO32_read(sensors.mSweepFIFO); 
             interrupts(); 
         } 
         LOG_d(logINFO, "fifo empty", 0);
